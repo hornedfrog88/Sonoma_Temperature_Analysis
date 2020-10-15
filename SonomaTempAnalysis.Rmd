@@ -1,0 +1,152 @@
+---
+title: "Sonoma Valley Temperature Analysis"
+author: "Rich McGowan"
+date: "10/4/2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r required libraries, include=FALSE}
+library(rlang)
+library(tidyverse)
+library(readr)
+library(lubridate)
+library(flexdashboard)
+library(shiny)
+setwd("C:/Users/rmcgowan/Desktop/D_Lab_Workshops")
+
+```
+
+Data acquired from National Centers for Environmental Information 
+NCEI - part of the NOAA's Climate Data online: https://www.ncdc.noaa.gov/cdo-web/
+```{r read in the data, include=FALSE}
+weather_data <- read_csv("weather_data.csv", 
+                         col_types = cols(DATE = col_date(format = "%Y-%m-%d"), 
+                                          TMAX = col_integer(), TMIN = col_integer(), 
+                                          TOBS = col_integer()))
+```
+
+
+```{r include=FALSE}
+weather_data_impute <- as.data.frame(weather_data)
+
+weather_data_impute <- weather_data_impute %>% filter(DATE >= '1953-01-01',STATION == 'USC00048351') %>% 
+  select(NAME,DATE,TMAX,TMIN)
+
+for (i in which(sapply(weather_data_impute,is.numeric))) {
+  weather_data_impute[is.na(weather_data_impute[,i]),i] <- round(mean(weather_data_impute[,i],na.rm = TRUE),0)
+}
+
+weather_data_impute$TMAX <- as.integer(weather_data_impute$TMAX)
+
+weather_data_impute$TMIN <- as.integer(weather_data_impute$TMIN)
+
+weather_data_impute$NAME <- NULL
+ 
+```
+
+```{r add new columns, include=FALSE}
+weather_data_impute <- weather_data_impute %>% 
+    mutate(YEAR = year(DATE), MONTH = month(DATE), DAY = day(DATE))
+
+#calculate and store average high for month/day of the imputed data
+avg_high_by_mnth_day <- weather_data_impute %>% 
+    select(TMAX,MONTH,DAY) %>% 
+    group_by(MONTH,DAY) %>% 
+    summarize(round(mean(TMAX),0))
+#calculate and store average low for month/day of the imputed data
+avg_low_by_mnth_day <- weather_data_impute %>% 
+  select(TMIN,MONTH,DAY) %>% 
+  group_by(MONTH,DAY) %>% 
+  summarize(round(mean(TMIN),0))
+#calculate and store the record high for month/day of the imputed data
+rec_high_by_mnth_day <- weather_data_impute %>% 
+  select(TMAX,MONTH,DAY) %>% 
+  group_by(MONTH,DAY) %>% 
+  summarize(max(TMAX))
+#calculate and store the record low for month/day of the imputed data
+rec_low_by_mnth_day <- weather_data_impute %>% 
+  select(TMIN,MONTH,DAY) %>% 
+  group_by(MONTH,DAY) %>% 
+  summarize(min(TMIN))
+
+weather_data_all <- weather_data_impute %>% inner_join(avg_high_by_mnth_day)
+names(weather_data_all)[7] <- "AVG_HIGH_FOR_DAY"
+
+weather_data_all <- weather_data_all %>% inner_join(avg_low_by_mnth_day)
+names(weather_data_all)[8] <- "AVG_LOW_FOR_DAY"
+
+weather_data_all <- weather_data_all %>% inner_join(rec_high_by_mnth_day)
+names(weather_data_all)[9] <- "REC_HIGH_FOR_DAY"
+
+weather_data_all <- weather_data_all %>% inner_join(rec_low_by_mnth_day)
+names(weather_data_all)[10] <- "REC_LOW_FOR_DAY"
+
+
+
+weather_data_all <- weather_data_all %>% 
+                    mutate(
+                      MONTHTEXT = case_when(
+                        MONTH == 1 ~ "January",
+                        MONTH == 2 ~ "February",
+                        MONTH == 3 ~ "March",
+                        MONTH == 4 ~ "April",
+                        MONTH == 5 ~ "May",
+                        MONTH == 6 ~ "June",
+                        MONTH == 7 ~ "July",
+                        MONTH == 8 ~ "August",
+                        MONTH == 9 ~ "September",
+                        MONTH == 10 ~ "October",
+                        MONTH == 11 ~ "November",
+                        MONTH == 12 ~ "December"
+                      )
+                    )
+
+```
+
+Inputs {.sidebar}
+----------------------------
+```{r Interactive Inputs, include=TRUE, echo=FALSE}
+  
+   selectInput(inputId = "month", 
+              label = "Month",
+              choices = unique(weather_data_all$MONTH), 
+              selected = 1
+             )
+
+  selectInput(inputId = "year", 
+              label = "Year",
+              choices = unique(weather_data_all$YEAR), 
+              selected = 1953
+             )
+
+```
+
+
+```{r Render Output1, include=TRUE, echo=FALSE}
+high_temp_subset <- reactive({
+  weather_data_all[weather_data_all$YEAR == input$year &
+  weather_data_all$MONTH == input$month,]
+})
+mygridtheme <- theme(plot.title = element_text(family = "Helvetica", face = "bold", size = (15)), legend.title = element_text(colour = "steelblue",  face = "bold.italic", family = "Helvetica"), legend.text = element_text(face = "italic", colour="steelblue4",family = "Helvetica"),axis.title = element_text(family = "Helvetica", size = (10), colour = "steelblue4"),
+axis.text = element_text(family = "Courier", colour = "cornflowerblue", size = (10)))
+renderPlot({
+  ggplot(high_temp_subset(),
+   aes(x=DAY,y=TMAX))+
+    geom_point(color= "blue",position = position_dodge(width = 0.2)) + 
+    geom_point(aes(x=DAY,y=AVG_FOR_DAY,color="Historical Avg Temp for the Day"))+
+    mygridtheme + 
+    theme(legend.title=element_blank())+
+labs(title = "Daily High Temperatures for the Month", x= "Day of the Month", y = "Daily High Temp (F)")
+ 
+  })  
+
+```
+
+
+
+
