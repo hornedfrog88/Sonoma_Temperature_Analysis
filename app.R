@@ -33,44 +33,48 @@ weather_data_impute$TMIN <- as.integer(weather_data_impute$TMIN)
 weather_data_impute <- weather_data_impute %>% 
     mutate(YEAR = year(DATE), MONTH = month(DATE), DAY = day(DATE))
 
-#calculate and store average high for month/day of the imputed data
+# create a NEW data frame containing statistics(average highs/lows 
+# and record highs/lows)for month/day combinations
+
+# calculate and store the historical average high for month/day of the imputed data
 avg_high_by_mnth_day <- weather_data_impute %>% 
     select(TMAX,MONTH,DAY) %>% 
     group_by(MONTH,DAY) %>% 
     summarize(round(mean(TMAX),0))
-#calculate and store average low for month/day of the imputed data
+# calculate and store the historical average low for month/day of the imputed data
 avg_low_by_mnth_day <- weather_data_impute %>% 
   select(TMIN,MONTH,DAY) %>% 
   group_by(MONTH,DAY) %>% 
   summarize(round(mean(TMIN),0))
-#calculate and store the record high for month/day of the imputed data
+# calculate and store the historical record high for month/day of the imputed data
 rec_high_by_mnth_day <- weather_data_impute %>% 
   select(TMAX,MONTH,DAY) %>% 
   group_by(MONTH,DAY) %>% 
   summarize(max(TMAX))
-#calculate and store the record low for month/day of the imputed data
+# calculate and store the historical record low for month/day of the imputed data
 rec_low_by_mnth_day <- weather_data_impute %>% 
   select(TMIN,MONTH,DAY) %>% 
   group_by(MONTH,DAY) %>% 
   summarize(min(TMIN))
 
-# create a average high for the date field
+# create a average high for the date row and add it to weather_data_all-rename column
 weather_data_all <- weather_data_impute %>% inner_join(avg_high_by_mnth_day)
 names(weather_data_all)[7] <- "AVG_HIGH_FOR_DAY"
 
-# create a average low for the date field
+# create a average low for the date row and add it to weather_data_all-rename column
 weather_data_all <- weather_data_all %>% inner_join(avg_low_by_mnth_day)
 names(weather_data_all)[8] <- "AVG_LOW_FOR_DAY"
 
-# create a record high for the date field
+# create a record high for the date row and add it to weather_data_all-rename column
 weather_data_all <- weather_data_all %>% inner_join(rec_high_by_mnth_day)
 names(weather_data_all)[9] <- "REC_HIGH_FOR_DAY"
 
-# create a average low for the date field
+# create a average low for the date row and add it to weather_data_all-rename column
 weather_data_all <- weather_data_all %>% inner_join(rec_low_by_mnth_day)
 names(weather_data_all)[10] <- "REC_LOW_FOR_DAY"
 
-# create a column to identify months by text rather than number
+# create a column in weather_data_all to identify months by text value
+# rather than by numeric value
 weather_data_all <- weather_data_all %>% 
     mutate(
         MONTHTEXT = case_when(
@@ -88,15 +92,61 @@ weather_data_all <- weather_data_all %>%
             MONTH == 12 ~ "December"
         )
     )
+# create a NEW data frame containing statistics(median high/lows)for  
+# month/year combinations
 
-# Define UI (fluid page) for application that creates the dotPlot(geom_point)
+#create a data frame summarized by month/year
+weather_data_mnth_year <- weather_data_impute %>% 
+  select(MONTH,YEAR) %>% 
+  group_by(MONTH,YEAR)
+
+# calculate and store the median high for month/year of the imputed data
+med_high_by_mnth_year <- weather_data_impute %>% 
+  select(TMAX,MONTH,YEAR) %>% 
+  group_by(MONTH,YEAR) %>% 
+  summarize(round(median(TMAX),0))
+
+# calculate and store the median low for month/year of the imputed data
+med_low_by_mnth_year <- weather_data_impute %>% 
+  select(TMIN,MONTH,YEAR) %>% 
+  group_by(MONTH,YEAR) %>% 
+  summarize(round(median(TMIN),0))
+
+# create a median high for the month/year and add it to weather_data_mnth_year-rename column
+weather_data_mnth_year <- weather_data_mnth_year %>% inner_join(med_high_by_mnth_year)
+names(weather_data_mnth_year)[3] <- "MED_HIGH_FOR_MONTH"
+
+# create a median low for the month/year and add it to weather_data_mnth_year-rename column
+weather_data_mnth_year <- weather_data_mnth_year %>% inner_join(med_low_by_mnth_year)
+names(weather_data_mnth_year)[4] <- "MED_LOW_FOR_MONTH"
+
+# create a column in weather_data_mnth_year to identify months by text value
+# rather than by numeric value
+weather_data_mnth_year <- weather_data_mnth_year %>% 
+  mutate(
+    MONTHTEXT = case_when(
+      MONTH == 1 ~ "January",
+      MONTH == 2 ~ "February",
+      MONTH == 3 ~ "March",
+      MONTH == 4 ~ "April",
+      MONTH == 5 ~ "May",
+      MONTH == 6 ~ "June",
+      MONTH == 7 ~ "July",
+      MONTH == 8 ~ "August",
+      MONTH == 9 ~ "September",
+      MONTH == 10 ~ "October",
+      MONTH == 11 ~ "November",
+      MONTH == 12 ~ "December"
+    )
+  )
+# Define UI (fluid page) for Shiny application that generates dotPlots(geom_point)
 ui <- fluidPage(
 
     # Application title
     titlePanel(p("Sonoma Valley Historical High and Low Temperature Visualizations(data from 1/1/1953 through 12/31/2019)",
                  style={'color:maroon;font-size:20px;'})),
 
-    # Sidebar with a select inputs
+    # Sidebar with select inputs and slider inputs
        selectInput(inputId = "month", 
                 label = "Month",
                 choices = unique(weather_data_all$MONTHTEXT), 
@@ -108,6 +158,14 @@ ui <- fluidPage(
                 choices = unique(weather_data_all$YEAR), 
                 selected = 1953
                  ),
+        sliderInput("year_range",
+                    "Year Range",
+                min = min(weather_data_mnth_year$YEAR),
+                max = max(weather_data_mnth_year$YEAR),
+                value = min(weather_data_mnth_year$YEAR),
+                sep = ""
+                 ),
+    
      # Show Output
         mainPanel(
           h1(textOutput("Text"),style={'color:maroon;font-size: 20px;
