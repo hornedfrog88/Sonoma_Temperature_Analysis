@@ -145,23 +145,24 @@ weather_data_mnth_year <- weather_data_mnth_year %>%
 ui <- fluidPage(
 
     # Application title
-    titlePanel(p("Sonoma Valley Historical High and Low Temperature Visualizations(data from 1/1/1953 through 12/31/2019)",
+    titlePanel(p("Sonoma Valley Historical Temperature Visualizations(data from 1/1/1953 through 12/31/2019)",
+                 windowTitle = "Sonoma Temp Visualizations",
                  style={'color:maroon;font-size:20px;'})),
 
     # Sidebar with select inputs and slider inputs
        selectInput(inputId = "month", 
-                label = "Month",
+                label = "Choose Month for All Plots",
                 choices = unique(weather_data_all$MONTHTEXT), 
                 selected = 1
                  ),
     
        selectInput(inputId = "year", 
-                label = "Year",
+                label = "Choose Year for the Daily Plots",
                 choices = unique(weather_data_all$YEAR), 
                 selected = 1953
                  ),
         sliderInput("year_range",
-                    "Year Range",
+                    "Choose Year Range for the Median Plots",
                 min = min(weather_data_mnth_year$YEAR),
                 max = max(weather_data_mnth_year$YEAR),
                 value = c(min(weather_data_mnth_year$YEAR),max(weather_data_mnth_year$YEAR)),
@@ -216,6 +217,7 @@ server <- function(input, output) {
                labs(title = paste("Daily High Temperatures for",input$month,input$year), x= "Day of the Month", y = "Temp (F)")
         }
       })
+ 
      #Plot 2
      output$dotPlot2 <- renderPlot({
        checkfordata <- is.na(as.factor(weather_data_all %>% filter(MONTHTEXT == input$month, YEAR == input$year)))
@@ -226,20 +228,20 @@ server <- function(input, output) {
             scale_x_discrete(limits = c(min(weather_data_all$DAY):max(weather_data_all$DAY)))+
             geom_point(aes(x=DAY,y=AVG_LOW_FOR_DAY,color = "Historical Average Low Temp for that Date"))+
             geom_point(aes(x=DAY,y=REC_LOW_FOR_DAY,color = "Record Low Temp for that Date"))+
-            mygridtheme + 
+            mygridtheme +
             theme(legend.title=element_blank())+ 
-            labs(title = paste("Daily Low Temperatures for",input$month,input$year), x= "Day of the Month", y = "Temp (F)")
+            labs(title = paste("Daily High Temperatures for",input$month,input$year), x= "Day of the Month", y = "Temp (F)")
+        
       }
      })
 
      #Plot 3
      output$dotPlot3 <- renderPlot({
         ggplot(weather_data_mnthyr_subset(),
-           aes(x=YEAR,y=MED_HIGH_FOR_MONTH))+
-           geom_point(color="red") +
-           geom_smooth(method = "lm", color = "maroon",se = FALSE)+
-           mygridtheme + 
-           labs(title = paste("Median High Temperatures for",input$month), x= "Year", y = "Temp (F)")
+         aes(x=YEAR,y=MED_HIGH_FOR_MONTH))+
+         geom_point(color="red") +
+         geom_smooth(method = "lm", color = "maroon",se = FALSE)+
+         labs(title = paste("Median High Temperatures for",input$month), x= "Year", y = "Temp (F)")
      })
 
      #Plot 4
@@ -248,14 +250,13 @@ server <- function(input, output) {
               aes(x=YEAR,y=MED_LOW_FOR_MONTH))+
          geom_point(color="blue") +
          geom_smooth(method = "lm", color = "maroon",se = FALSE)+
-         mygridtheme + 
          labs(title = paste("Median Low Temperatures for",input$month), x= "Year", y = "Temp (F)")
      })
     
       output$Text <- renderText({
        checkfordata <- is.na(as.factor(weather_data_all %>% filter(MONTHTEXT == input$month, YEAR == input$year)))
        if (checkfordata == TRUE) { 
-        paste('No Data Recorded for:',input$month,input$year)
+        paste('No Daily Data Recorded for:',input$month,input$year)
        }
       })
   }
