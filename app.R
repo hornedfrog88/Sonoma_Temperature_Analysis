@@ -188,7 +188,7 @@ server <- function(input, output) {
     })
     
     weather_data_mnthyr_subset <- reactive({
-         weather_data_mnth_year[weather_data_mnth_year$MONTH == input$month &
+         weather_data_mnth_year[weather_data_mnth_year$MONTHTEXT == input$month &
                                 weather_data_mnth_year$YEAR >= input$year_range[1]&
                                 weather_data_mnth_year$YEAR <= input$year_range[2],]
     })
@@ -234,8 +234,8 @@ server <- function(input, output) {
      #Plot 3
      output$dotPlot3 <- renderPlot({
         ggplot(weather_data_mnthyr_subset(),
-           aes(x=YEAR,y=MED_LOW_FOR_MONTH))+
-           geom_point() +
+           aes(x=YEAR,y=MED_HIGH_FOR_MONTH))+
+           geom_point(color="blue") +
            mygridtheme + 
            labs(title = paste("Median High Temperatures for",input$month), x= "Year", y = "Median High Temp (F)")
      })
