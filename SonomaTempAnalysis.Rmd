@@ -108,6 +108,59 @@ weather_data_all <- weather_data_all %>%
 
 ```
 
+```{r add new columns2, include=FALSE}
+# create a NEW data frame containing statistics(median high/lows)for  
+# month/year combinations
+
+#create a data frame summarized by month/year
+weather_data_mnth_year <- weather_data_impute %>% 
+  select(MONTH,YEAR) %>% 
+  group_by(MONTH,YEAR)
+
+weather_data_mnth_year <- distinct(weather_data_mnth_year,MONTH,YEAR)
+
+# calculate and store the median high for month/year of the imputed data
+med_high_by_mnth_year <- weather_data_impute %>% 
+  select(TMAX,MONTH,YEAR) %>% 
+  group_by(MONTH,YEAR) %>% 
+  summarize(round(median(TMAX),0))
+
+# calculate and store the median low for month/year of the imputed data
+med_low_by_mnth_year <- weather_data_impute %>% 
+  select(TMIN,MONTH,YEAR) %>% 
+  group_by(MONTH,YEAR) %>% 
+  summarize(round(median(TMIN),0))
+
+# create a median high for the month/year and add it to weather_data_mnth_year-rename column
+weather_data_mnth_year <- weather_data_mnth_year %>% inner_join(med_high_by_mnth_year)
+names(weather_data_mnth_year)[3] <- "MED_HIGH_FOR_MONTH"
+
+# create a median low for the month/year and add it to weather_data_mnth_year-rename column
+weather_data_mnth_year <- weather_data_mnth_year %>% inner_join(med_low_by_mnth_year)
+names(weather_data_mnth_year)[4] <- "MED_LOW_FOR_MONTH"
+
+# create a column in weather_data_mnth_year to identify months by text value
+# rather than by numeric value
+weather_data_mnth_year <- weather_data_mnth_year %>% 
+  mutate(
+    MONTHTEXT = case_when(
+      MONTH == 1 ~ "January",
+      MONTH == 2 ~ "February",
+      MONTH == 3 ~ "March",
+      MONTH == 4 ~ "April",
+      MONTH == 5 ~ "May",
+      MONTH == 6 ~ "June",
+      MONTH == 7 ~ "July",
+      MONTH == 8 ~ "August",
+      MONTH == 9 ~ "September",
+      MONTH == 10 ~ "October",
+      MONTH == 11 ~ "November",
+      MONTH == 12 ~ "December"
+    )
+  )
+
+```
+
 Inputs {.sidebar}
 ----------------------------
 ```{r Interactive Inputs, include=TRUE, echo=FALSE}

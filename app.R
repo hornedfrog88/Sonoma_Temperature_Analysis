@@ -95,10 +95,12 @@ weather_data_all <- weather_data_all %>%
 # create a NEW data frame containing statistics(median high/lows)for  
 # month/year combinations
 
-#create a data frame summarized by month/year
+# create a data frame summarized by month/year
 weather_data_mnth_year <- weather_data_impute %>% 
   select(MONTH,YEAR) %>% 
   group_by(MONTH,YEAR)
+# combine the weather_data_mnth_year data frame rows by distinct MONTH & YEAR
+weather_data_mnth_year <- distinct(weather_data_mnth_year,MONTH,YEAR)
 
 # calculate and store the median high for month/year of the imputed data
 med_high_by_mnth_year <- weather_data_impute %>% 
@@ -162,8 +164,9 @@ ui <- fluidPage(
                     "Year Range",
                 min = min(weather_data_mnth_year$YEAR),
                 max = max(weather_data_mnth_year$YEAR),
-                value = min(weather_data_mnth_year$YEAR),
-                sep = ""
+                value = c(min(weather_data_mnth_year$YEAR),max(weather_data_mnth_year$YEAR)),
+                sep = "",
+                ticks = FALSE
                  ),
     
      # Show Output
@@ -171,7 +174,8 @@ ui <- fluidPage(
           h1(textOutput("Text"),style={'color:maroon;font-size: 20px;
                                  font-style: bold-italic;'}),
           plotOutput("dotPlot1"),
-          plotOutput("dotPlot2")
+          plotOutput("dotPlot2"),
+          plotOutput("dotPlot3")
          )
    )
 
@@ -180,15 +184,23 @@ server <- function(input, output) {
     
     weather_data_subset <- reactive({
         weather_data_all[weather_data_all$YEAR == input$year &
-                            weather_data_all$MONTHTEXT == input$month,]
-    })   
-      mygridtheme <- theme(aspect.ratio = .65, plot.title = element_text(family = "NimbusMon", color = "blue", face = "bold", size = (15)), 
+                         weather_data_all$MONTHTEXT == input$month,]
+    })
+    
+    weather_data_mnthyr_subset <- reactive({
+         weather_data_mnth_year[weather_data_mnth_year$MONTH == input$month &
+                                weather_data_mnth_year$YEAR >= input$year_range[1]&
+                                weather_data_mnth_year$YEAR <= input$year_range[2],]
+    })
+     
+    # define plotting theme
+    mygridtheme <- theme(aspect.ratio = .65, plot.title = element_text(family = "NimbusMon", color = "blue", face = "bold", size = (15)), 
     # no legend title:   legend.title = element_text(color = "steelblue",  face = "bold.italic", family = "Helvetica", size = (12)), 
                          legend.text = element_text(face = "italic", color = "steelblue4", family = "NimbusMon"),
                          axis.title = element_text(family = "NimbusMon", size = (12), colour = "steelblue4"),
                          axis.text = element_text(family = "NimbusMon", color = "cornflowerblue", size = (12)),
                          axis.text.x = element_text(angle = 20))
-
+     # Plot 1
      output$dotPlot1 <- renderPlot({
        checkfordata <- is.na(as.factor(weather_data_all %>% filter(MONTHTEXT == input$month, YEAR == input$year)))
        if (checkfordata == FALSE) { 
@@ -203,6 +215,7 @@ server <- function(input, output) {
                labs(title = paste("Daily High Temperatures for",input$month,input$year), x= "Day of the Month", y = "Daily High Temp (F)")
         }
       })
+     #Plot 2
      output$dotPlot2 <- renderPlot({
        checkfordata <- is.na(as.factor(weather_data_all %>% filter(MONTHTEXT == input$month, YEAR == input$year)))
        if (checkfordata == FALSE) { 
@@ -218,7 +231,16 @@ server <- function(input, output) {
       }
      })
          
-     output$Text <- renderText({
+     #Plot 3
+     output$dotPlot3 <- renderPlot({
+        ggplot(weather_data_mnthyr_subset(),
+           aes(x=YEAR,y=MED_LOW_FOR_MONTH))+
+           geom_point() +
+           mygridtheme + 
+           labs(title = paste("Median High Temperatures for",input$month), x= "Year", y = "Median High Temp (F)")
+     })
+    
+      output$Text <- renderText({
        checkfordata <- is.na(as.factor(weather_data_all %>% filter(MONTHTEXT == input$month, YEAR == input$year)))
        if (checkfordata == TRUE) { 
         paste('No Data Recorded for:',input$month,input$year)
