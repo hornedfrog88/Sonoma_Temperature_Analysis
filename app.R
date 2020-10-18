@@ -237,6 +237,7 @@ server <- function(input, output) {
         ggplot(weather_data_mnthyr_subset(),
            aes(x=YEAR,y=MED_HIGH_FOR_MONTH))+
            geom_point(color="red") +
+           geom_smooth(method = "lm", color = "maroon",se = FALSE)+
            mygridtheme + 
            labs(title = paste("Median High Temperatures for",input$month), x= "Year", y = "Temp (F)")
      })
@@ -246,6 +247,7 @@ server <- function(input, output) {
        ggplot(weather_data_mnthyr_subset(),
               aes(x=YEAR,y=MED_LOW_FOR_MONTH))+
          geom_point(color="blue") +
+         geom_smooth(method = "lm", color = "maroon",se = FALSE)+
          mygridtheme + 
          labs(title = paste("Median Low Temperatures for",input$month), x= "Year", y = "Temp (F)")
      })
