@@ -175,7 +175,8 @@ ui <- fluidPage(
                                  font-style: bold-italic;'}),
           plotOutput("dotPlot1"),
           plotOutput("dotPlot2"),
-          plotOutput("dotPlot3")
+          plotOutput("dotPlot3"),
+          plotOutput("dotPlot4")
          )
    )
 
@@ -212,7 +213,7 @@ server <- function(input, output) {
                geom_point(aes(x=DAY,y=REC_HIGH_FOR_DAY,color = "Record High Temp for that Date"))+
                mygridtheme +
                theme(legend.title=element_blank())+ 
-               labs(title = paste("Daily High Temperatures for",input$month,input$year), x= "Day of the Month", y = "Daily High Temp (F)")
+               labs(title = paste("Daily High Temperatures for",input$month,input$year), x= "Day of the Month", y = "Temp (F)")
         }
       })
      #Plot 2
@@ -227,17 +228,26 @@ server <- function(input, output) {
             geom_point(aes(x=DAY,y=REC_LOW_FOR_DAY,color = "Record Low Temp for that Date"))+
             mygridtheme + 
             theme(legend.title=element_blank())+ 
-            labs(title = paste("Daily Low Temperatures for",input$month,input$year), x= "Day of the Month", y = "Daily Low Temp (F)")
+            labs(title = paste("Daily Low Temperatures for",input$month,input$year), x= "Day of the Month", y = "Temp (F)")
       }
      })
-         
+
      #Plot 3
      output$dotPlot3 <- renderPlot({
         ggplot(weather_data_mnthyr_subset(),
            aes(x=YEAR,y=MED_HIGH_FOR_MONTH))+
-           geom_point(color="blue") +
+           geom_point(color="red") +
            mygridtheme + 
-           labs(title = paste("Median High Temperatures for",input$month), x= "Year", y = "Median High Temp (F)")
+           labs(title = paste("Median High Temperatures for",input$month), x= "Year", y = "Temp (F)")
+     })
+
+     #Plot 4
+     output$dotPlot4 <- renderPlot({
+       ggplot(weather_data_mnthyr_subset(),
+              aes(x=YEAR,y=MED_LOW_FOR_MONTH))+
+         geom_point(color="blue") +
+         mygridtheme + 
+         labs(title = paste("Median Low Temperatures for",input$month), x= "Year", y = "Temp (F)")
      })
     
       output$Text <- renderText({
