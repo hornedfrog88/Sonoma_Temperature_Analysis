@@ -230,7 +230,7 @@ server <- function(input, output) {
             geom_point(aes(x=DAY,y=REC_LOW_FOR_DAY,color = "Record Low Temp for that Date"))+
             mygridtheme +
             theme(legend.title=element_blank())+ 
-            labs(title = paste("Daily High Temperatures for",input$month,input$year), x= "Day of the Month", y = "Temp (F)")
+            labs(title = paste("Daily Low Temperatures for",input$month,input$year), x= "Day of the Month", y = "Temp (F)")
         
       }
      })
