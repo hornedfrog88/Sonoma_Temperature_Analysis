@@ -1,6 +1,6 @@
 # Shiny App for Sonoma Valley Temperature Analysis
 #
-#
+
 library(shiny)
 library(rlang)
 library(tidyverse)
@@ -13,7 +13,8 @@ weather_data <- read_csv("weather_data.csv",
                                           TMAX = col_integer(), TMIN = col_integer(), 
                                           TOBS = col_integer()))
 
-# filter rows prior to 1953 and after 2019 and filter rows outside of Sonoma 
+# filter out rows prior to 1953 and after 2019 and 
+# filter rows outside of Sonoma Station ID 
 weather_data_impute <- as.data.frame(weather_data)
 weather_data_impute <- weather_data_impute %>% filter(DATE >= '1953-01-01'& 
                                                       DATE < '2020-01-01'& 
@@ -141,6 +142,7 @@ weather_data_mnth_year <- weather_data_mnth_year %>%
       MONTH == 12 ~ "December"
     )
   )
+################################
 # Define UI (fluid page) for Shiny application that generates dotPlots(geom_point)
 ui <- fluidPage(
 
@@ -148,28 +150,37 @@ ui <- fluidPage(
     titlePanel(p("Sonoma Valley Historical Temperature Visualizations(data from 1/1/1953 through 12/31/2019)",
                  windowTitle = "Sonoma Temp Visualizations",
                  style={'color:maroon;font-size:20px;'})),
-
-    # Sidebar with select inputs and slider inputs
-       selectInput(inputId = "month", 
-                label = "Choose Month for All Plots",
-                choices = unique(weather_data_all$MONTHTEXT), 
-                selected = 1
-                 ),
-    
-       selectInput(inputId = "year", 
-                label = "Choose Year for the Daily Plots",
-                choices = unique(weather_data_all$YEAR), 
-                selected = 1953
-                 ),
-        sliderInput("year_range",
-                    "Choose Year Range for the Median Plots",
-                min = min(weather_data_mnth_year$YEAR),
-                max = max(weather_data_mnth_year$YEAR),
-                value = c(min(weather_data_mnth_year$YEAR),max(weather_data_mnth_year$YEAR)),
-                sep = "",
-                ticks = FALSE
-                 ),
-    
+       fluidRow(
+           column(4,
+           # Sidebar with select inputs and slider inputs
+                  selectInput(inputId = "month", 
+                              label = "Choose Month for All Plots",
+                              choices = unique(weather_data_all$MONTHTEXT), 
+                              selected = 1
+                               )     
+              ),
+           
+           column(4,
+                  
+                  selectInput(inputId = "year", 
+                              label = "Choose Year for the Daily Plots",
+                              choices = unique(weather_data_all$YEAR), 
+                              selected = 1953
+                             ) 
+            ),
+           
+           column(4,
+                  sliderInput("year_range",
+                              "Choose Year Range for the Median Plots",
+                              min = min(weather_data_mnth_year$YEAR),
+                              max = max(weather_data_mnth_year$YEAR),
+                              value = c(min(weather_data_mnth_year$YEAR),max(weather_data_mnth_year$YEAR)),
+                              sep = "",
+                              ticks = FALSE
+                              )
+                  )
+         ),
+         
      # Show Output
         mainPanel(
           h1(textOutput("Text"),style={'color:maroon;font-size: 20px;
