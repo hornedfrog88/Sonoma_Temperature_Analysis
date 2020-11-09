@@ -208,8 +208,8 @@ server <- function(input, output) {
      
     # define plotting theme
     mygridtheme <- theme(aspect.ratio = .65, plot.title = element_text(family = "NimbusMon", color = "blue", face = "bold", size = (15)), 
-    # no legend title:   legend.title = element_text(color = "steelblue",  face = "bold.italic", family = "Helvetica", size = (12)), 
-                         legend.text = element_text(face = "italic", color = "steelblue4", family = "NimbusMon"),
+    # exclude legend title:   legend.title = element_text(color = "steelblue",  face = "bold.italic", family = "Helvetica", size = (12)), 
+                         legend.text = element_text(face = "italic", family = "NimbusMon"),
                          axis.title = element_text(family = "NimbusMon", size = (12), colour = "steelblue4"),
                          axis.text = element_text(family = "NimbusMon", color = "cornflowerblue", size = (12)),
                          axis.text.x = element_text(angle = 20))
@@ -221,7 +221,7 @@ server <- function(input, output) {
                aes(x=DAY,y=TMAX))+
                geom_jitter(color= "blue") + 
                scale_x_discrete(limits = c(min(weather_data_all$DAY):max(weather_data_all$DAY)))+
-               geom_point(aes(x=DAY,y=AVG_HIGH_FOR_DAY,color = "Historical Average High Temp for that Date"))+
+               geom_point(aes(x=DAY,y=AVG_HIGH_FOR_DAY,color = "Historical Average High Temp for that Date"))+scale_color_manual(values = c("#00AFBB", "#FC4E07"))+
                geom_point(aes(x=DAY,y=REC_HIGH_FOR_DAY,color = "Record High Temp for that Date"))+
                mygridtheme +
                theme(legend.title=element_blank())+ 
@@ -237,7 +237,7 @@ server <- function(input, output) {
             aes(x=DAY,y=TMIN))+
             geom_jitter(color= "blue") + 
             scale_x_discrete(limits = c(min(weather_data_all$DAY):max(weather_data_all$DAY)))+
-            geom_point(aes(x=DAY,y=AVG_LOW_FOR_DAY,color = "Historical Average Low Temp for that Date"))+
+            geom_point(aes(x=DAY,y=AVG_LOW_FOR_DAY,color = "Historical Average Low Temp for that Date"))+scale_color_manual(values = c("#00AFBB", "#FC4E07"))+
             geom_point(aes(x=DAY,y=REC_LOW_FOR_DAY,color = "Record Low Temp for that Date"))+
             mygridtheme +
             theme(legend.title=element_blank())+ 
