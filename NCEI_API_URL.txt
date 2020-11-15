@@ -1,0 +1,4 @@
+https://www.ncei.noaa.gov/access/services/data/v1?dataset=daily-summaries&stations=USC00048351&startDate=1955-01-01&endDate=2020-11-01&format=csv&units=standard
+
+https://www.ncei.noaa.gov/access/services/data/v1?dataset=daily-summaries&stations=USC00048351&startDate=1955-01-01&endDate=2020-11-01&format=json&units=standard
+

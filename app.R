@@ -1,65 +1,92 @@
 # Shiny App for Sonoma Valley Temperature Analysis
 #
 
+# required packages
 library(shiny)
 library(rlang)
 library(tidyverse)
 library(readr)
 library(lubridate)
+library(httr)
+library(jsonlite)
+
+currentdate <- as.character(Sys.Date())
+#create the url string (removing the spaces pasted to the currentdate) using stringr::str_remove_all
+url <- stringr::str_remove_all(paste("https://www.ncei.noaa.gov/access/services/data/v1?dataset=daily-summaries&stations=USC00048351&startDate=1955-01-01&endDate=",currentdate,"&format=json&units=standard")," ")
+
+# resp is the response of the API call (httr::GET function)
+resp <- GET(url, handle = NULL)
+
+# check the http_type (content type) of the response (resp) to make sure it is json. 
+# you should probably wrap all following functions with an IF in case the response is not JSON
+if (http_type(resp) == "application/json") {
+  # unpack the content (as text) using the httr::content function 
+  weather_content <- content(resp,as = 'text')
+  # transform my_content (using the fromJSON function from the jsonlite package)
+  # into a nice data frame called my_content_from_JSON
+  weather_data <- fromJSON(weather_content) 
+  } else {
+  print('API DID NOT RETURN JSON')
+}
+
+weather_data <- weather_data %>% 
+                   select("DATE","TMAX","TMIN")
 
 # read the data from a csv file provided by the NOAA
-weather_data <- read_csv("weather_data.csv", 
-                         col_types = cols(DATE = col_date(format = "%Y-%m-%d"), 
-                                          TMAX = col_integer(), TMIN = col_integer(), 
-                                          TOBS = col_integer()))
+#weather_data <- read_csv("weather_data.csv", 
+#                         col_types = cols(DATE = col_date(format = "%Y-%m-%d"), 
+#                                          TMAX = col_integer(), TMIN = col_integer(), 
+#                                          TOBS = col_integer()))
 
 # filter out rows prior to 1953 and after 2019 and 
 # filter rows outside of Sonoma Station ID 
-weather_data_impute <- as.data.frame(weather_data)
-weather_data_impute <- weather_data_impute %>% filter(DATE >= '1953-01-01'& 
-                                                      DATE < '2020-01-01'& 
-                                                      STATION == 'USC00048351') %>% 
-                                                      select(DATE,TMAX,TMIN)
+#weather_data_impute <- as.data.frame(weather_data)
+#weather_data_impute <- weather_data_impute %>% filter(DATE >= '1953-01-01'& 
+#                                                      DATE < '2020-01-01'& 
+#                                                      STATION == 'USC00048351') %>% 
+#                                                      select(DATE,TMAX,TMIN)
+
+
 
 # replace any na values with the mean of the column(there may not be actual NAs in the data)
-for (i in which(sapply(weather_data_impute,is.numeric))) {
-    weather_data_impute[is.na(weather_data_impute[,i]),i] <- round(mean(weather_data_impute[,i],na.rm = TRUE),0)
+for (i in which(sapply(weather_data,is.numeric))) {
+    weather_data[is.na(weather_data[,i]),i] <- round(mean(weather_data[,i],na.rm = TRUE),0)
 }
 
 # save the TMAX, TMIN values as integer
-weather_data_impute$TMAX <- as.integer(weather_data_impute$TMAX)
-weather_data_impute$TMIN <- as.integer(weather_data_impute$TMIN)
+weather_data$TMAX <- as.integer(weather_data$TMAX)
+weather_data$TMIN <- as.integer(weather_data$TMIN)
 
 # separate (and save) the DATE column into 3 columns YEAR, MONTH and DAY
-weather_data_impute <- weather_data_impute %>% 
+weather_data <- weather_data %>% 
     mutate(YEAR = year(DATE), MONTH = month(DATE), DAY = day(DATE))
 
 # create a NEW data frame containing statistics(average highs/lows 
 # and record highs/lows)for month/day combinations
 
 # calculate and store the historical average high for month/day of the imputed data
-avg_high_by_mnth_day <- weather_data_impute %>% 
+avg_high_by_mnth_day <- weather_data %>% 
     select(TMAX,MONTH,DAY) %>% 
     group_by(MONTH,DAY) %>% 
     summarize(round(mean(TMAX),0))
 # calculate and store the historical average low for month/day of the imputed data
-avg_low_by_mnth_day <- weather_data_impute %>% 
+avg_low_by_mnth_day <- weather_data %>% 
   select(TMIN,MONTH,DAY) %>% 
   group_by(MONTH,DAY) %>% 
   summarize(round(mean(TMIN),0))
 # calculate and store the historical record high for month/day of the imputed data
-rec_high_by_mnth_day <- weather_data_impute %>% 
+rec_high_by_mnth_day <- weather_data %>% 
   select(TMAX,MONTH,DAY) %>% 
   group_by(MONTH,DAY) %>% 
   summarize(max(TMAX))
 # calculate and store the historical record low for month/day of the imputed data
-rec_low_by_mnth_day <- weather_data_impute %>% 
+rec_low_by_mnth_day <- weather_data %>% 
   select(TMIN,MONTH,DAY) %>% 
   group_by(MONTH,DAY) %>% 
   summarize(min(TMIN))
 
 # create a average high for the date row and add it to weather_data_all-rename column
-weather_data_all <- weather_data_impute %>% inner_join(avg_high_by_mnth_day)
+weather_data_all <- weather_data %>% inner_join(avg_high_by_mnth_day)
 names(weather_data_all)[7] <- "AVG_HIGH_FOR_DAY"
 
 # create a average low for the date row and add it to weather_data_all-rename column
@@ -97,20 +124,20 @@ weather_data_all <- weather_data_all %>%
 # month/year combinations
 
 # create a data frame summarized by month/year
-weather_data_mnth_year <- weather_data_impute %>% 
+weather_data_mnth_year <- weather_data %>% 
   select(MONTH,YEAR) %>% 
   group_by(MONTH,YEAR)
 # combine the weather_data_mnth_year data frame rows by distinct MONTH & YEAR
 weather_data_mnth_year <- distinct(weather_data_mnth_year,MONTH,YEAR)
 
 # calculate and store the median high for month/year of the imputed data
-med_high_by_mnth_year <- weather_data_impute %>% 
+med_high_by_mnth_year <- weather_data %>% 
   select(TMAX,MONTH,YEAR) %>% 
   group_by(MONTH,YEAR) %>% 
   summarize(round(median(TMAX),0))
 
 # calculate and store the median low for month/year of the imputed data
-med_low_by_mnth_year <- weather_data_impute %>% 
+med_low_by_mnth_year <- weather_data %>% 
   select(TMIN,MONTH,YEAR) %>% 
   group_by(MONTH,YEAR) %>% 
   summarize(round(median(TMIN),0))
@@ -147,7 +174,7 @@ weather_data_mnth_year <- weather_data_mnth_year %>%
 ui <- fluidPage(
 
     # Application title
-    titlePanel(p("Sonoma Valley Historical Temperature Visualizations(data from 1/1/1953 through 12/31/2019)",
+    titlePanel(p("Sonoma Valley Historical Temperature Visualizations(data from 1/1/1955 through latest data)",
                  windowTitle = "Sonoma Temp Visualizations",
                  style={'color:maroon;font-size:20px;'})),
        fluidRow(
