@@ -1,7 +1,7 @@
 ---
 title: "Sonoma Valley Temperature Analysis"
 author: "Rich McGowan"
-date: "10/4/2020"
+date: "5/2/2021"
 output: html_document
 runtime: shiny
 ---
@@ -25,7 +25,7 @@ Data acquired from National Centers for Environmental Information
 NCEI - part of the NOAA's Climate Data online: https://www.ncdc.noaa.gov/cdo-web/
 ```{r read in the data, include=FALSE}
 weather_data <- read_csv("weather_data.csv", 
-                         col_types = cols(DATE = col_date(format = "%Y-%m-%d"), 
+                         col_types = cols(DATE = col_date(format = "%m/%d/%Y"), 
                                           TMAX = col_integer(), TMIN = col_integer(), 
                                           TOBS = col_integer()))
 ```
@@ -34,7 +34,7 @@ weather_data <- read_csv("weather_data.csv",
 ```{r include=FALSE}
 weather_data_impute <- as.data.frame(weather_data)
 
-weather_data_impute <- weather_data_impute %>% filter(DATE >= '1953-01-01',STATION == 'USC00048351') %>% 
+weather_data_impute <- weather_data_impute %>% filter(DATE >= '1955-01-01',STATION == 'USC00048351') %>% 
   select(NAME,DATE,TMAX,TMIN)
 
 for (i in which(sapply(weather_data_impute,is.numeric))) {
@@ -174,7 +174,7 @@ Inputs {.sidebar}
   selectInput(inputId = "year", 
               label = "Year",
               choices = unique(weather_data_all$YEAR), 
-              selected = 1953
+              selected = 1955
              )
 
 ```
